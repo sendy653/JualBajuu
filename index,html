@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>FASHIONKU | Modern Online Fashion Store</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { black: '#121212', charcoal: '#222222', offwhite: '#F9F9FB', accent: '#E53E3E' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons CDN -->
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-brand-offwhite text-brand-charcoal antialiased flex flex-col min-h-screen">
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-black text-white px-5 py-3 rounded-xl shadow-2xl z-50 text-sm font-semibold transition-all duration-300 opacity-0 pointer-events-none translate-y-2"></div>
+
+  <!-- Announcement Bar -->
+  <div class="bg-black text-white text-xs py-2 text-center font-semibold tracking-wider">
+    Gratis Ongkir untuk Pembelian di Atas Rp500.000
+  </div>
+
+  <!-- Navbar Header -->
+  <header class="bg-white border-b sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <button onclick="navigate('home')" class="text-2xl font-black tracking-widest text-black">FASHIONKU</button>
+
+      <nav class="hidden md:flex space-x-8 text-sm font-bold">
+        <button onclick="navigate('home')" class="hover:text-gray-500 transition">Home</button>
+        <button onclick="filterGender('All')" class="hover:text-gray-500 transition">Shop</button>
+        <button onclick="filterGender('Pria')" class="hover:text-gray-500 transition">Pria</button>
+        <button onclick="filterGender('Wanita')" class="hover:text-gray-500 transition">Wanita</button>
+      </nav>
+
+      <div class="flex items-center space-x-5">
+        <div class="relative hidden sm:block">
+          <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Cari pakaian..." class="pl-8 pr-3 py-1.5 text-xs bg-gray-100 rounded-full focus:outline-none focus:ring-1 focus:ring-black w-44">
+          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-gray-400"></i>
+        </div>
+
+        <button onclick="toggleCartDrawer()" class="relative p-1">
+          <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+          <span id="cartCountBadge" class="absolute -top-1 -right-1 bg-black text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN VIEW CONTAINERS -->
+  <main id="mainApp" class="flex-1">
+    
+    <!-- Home View -->
+    <section id="viewHome" class="space-y-16">
+      <div class="bg-neutral-900 text-white py-20 px-4 text-center relative">
+        <div class="max-w-3xl mx-auto">
+          <span class="text-xs font-bold tracking-widest text-gray-400 uppercase">New Collection 2026</span>
+          <h1 class="text-4xl sm:text-6xl font-black tracking-tight mt-2 mb-4">STYLE THAT DEFINES YOU</h1>
+          <p class="text-gray-300 text-sm sm:text-base max-w-xl mx-auto mb-8">Temukan koleksi fashion terbaru dengan desain modern, minimalis, dan kualitas terbaik.</p>
+          <button onclick="navigate('shop')" class="bg-white text-black px-8 py-3 rounded-full font-bold text-sm hover:bg-gray-200 transition">Belanja Sekarang</button>
+        </div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between items-end mb-8">
+          <div>
+            <h2 class="text-2xl font-bold">Produk Terlaris</h2>
+            <p class="text-xs text-gray-500">Pilihan terfavorit pelanggan FASHIONKU</p>
+          </div>
+          <button onclick="navigate('shop')" class="text-xs font-bold border-b border-black">Lihat Semua</button>
+        </div>
+        <div id="bestSellerGrid" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
+      </div>
+    </section>
+
+    <!-- Shop Catalog View -->
+    <section id="viewShop" class="max-w-7xl mx-auto px-4 py-8 hidden">
+      <div class="flex flex-wrap items-center justify-between gap-4 mb-8 border-b pb-4">
+        <div class="flex items-center space-x-2 overflow-x-auto hide-scrollbar" id="categoryFilterContainer"></div>
+        <div class="flex items-center space-x-2 text-xs font-bold" id="genderFilterContainer"></div>
+      </div>
+      <div id="shopProductGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6"></div>
+    </section>
+
+    <!-- Checkout View -->
+    <section id="viewCheckout" class="max-w-3xl mx-auto px-4 py-8 hidden">
+      <h2 class="text-2xl font-black mb-6">Checkout Pesanan</h2>
+      <form onsubmit="submitCheckout(event)" class="bg-white p-6 sm:p-8 rounded-2xl border space-y-6">
+        <div class="space-y-4">
+          <h3 class="font-bold text-xs uppercase text-gray-400 tracking-wider">Informasi Pengiriman</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input required type="text" id="chkName" placeholder="Nama Lengkap" class="border p-2.5 rounded-lg text-xs w-full">
+            <input required type="tel" id="chkPhone" placeholder="Nomor WhatsApp" class="border p-2.5 rounded-lg text-xs w-full">
+            <input required type="email" id="chkEmail" placeholder="Email" class="border p-2.5 rounded-lg text-xs w-full sm:col-span-2">
+            <textarea required id="chkAddress" placeholder="Alamat Lengkap" class="border p-2.5 rounded-lg text-xs w-full sm:col-span-2 h-20"></textarea>
+            <input required type="text" id="chkCity" placeholder="Kota / Kabupaten" class="border p-2.5 rounded-lg text-xs w-full">
+            <input required type="text" id="chkProv" placeholder="Provinsi" class="border p-2.5 rounded-lg text-xs w-full">
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-xs uppercase text-gray-400 tracking-wider mb-3">Metode Pembayaran</h3>
+          <select id="chkPayment" class="w-full border p-2.5 rounded-lg text-xs font-semibold">
+            <option value="Virtual Account">Virtual Account (BCA / Mandiri / BRI)</option>
+            <option value="QRIS">QRIS / GoPay / OVO / ShopeePay</option>
+            <option value="Bank Transfer">Bank Transfer Manual</option>
+            <option value="Credit Card">Kartu Kredit / Debit</option>
+          </select>
+        </div>
+
+        <div class="border-t pt-4">
+          <div class="flex justify-between font-black text-lg mb-4">
+            <span>Total Bayar</span>
+            <span id="chkTotalDisplay">Rp0</span>
+          </div>
+          <button type="submit" class="w-full bg-black text-white text-xs font-bold py-3.5 rounded-xl hover:bg-gray-800">
+            Bayar Pesanan Sekarang
+          </button>
+        </div>
+      </form>
+    </section>
+
+  </main>
+
+  <!-- CART DRAWER -->
+  <div id="cartDrawer" class="fixed inset-0 bg-black/50 z-50 transition-opacity opacity-0 pointer-events-none">
+    <div class="absolute right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-2xl p-6 flex flex-col justify-between">
+      <div>
+        <div class="flex justify-between items-center border-b pb-4 mb-4">
+          <h3 class="font-bold text-lg">Keranjang Belanja</h3>
+          <button onclick="toggleCartDrawer()" class="p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div id="cartItemsList" class="space-y-4 max-h-[60vh] overflow-y-auto"></div>
+      </div>
+
+      <div class="border-t pt-4 space-y-3">
+        <div class="flex justify-between font-black text-base">
+          <span>Subtotal</span>
+          <span id="cartSubtotal">Rp0</span>
+        </div>
+        <button onclick="proceedToCheckout()" class="w-full bg-black text-white py-3 rounded-xl font-bold text-xs hover:bg-gray-800">
+          Lanjut ke Checkout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUCT DETAIL MODAL -->
+  <div id="productModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto">
+      <button onclick="closeModal()" class="absolute top-4 right-4 p-2 text-gray-400 hover:text-black"><i data-lucide="x" class="w-5 h-5"></i></button>
+      <div id="modalContent" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-black text-white py-8 text-center text-xs mt-12">
+    <p>© 2026 FASHIONKU Store. Terhubung ke Google Sheets Database.</p>
+  </footer>
+
+  <!-- ENGINE SCRIPT -->
+  <script>
+    let products = [];
+    let cart = [];
+    let activeGender = 'All';
+    let activeCategory = 'All';
+    let searchQuery = '';
+
+    const formatIDR = (val) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val);
+
+    // Fallback gambar darurat jika internet pelanggan lambat
+    function handleImgError(imgElement, id) {
+      imgElement.onerror = null;
+      imgElement.src = 'https://dummyimage.com/600x600/121212/ffffff.png&text=FASHIONKU+ITEM+' + id;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
+      setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2'), 3000);
+    }
+
+    // Inisialisasi Data saat Web Dimuat
+    window.onload = function() {
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+          .withSuccessHandler(initStore)
+          .withFailureHandler(() => initStore([]))
+          .getProductsData();
+      } else {
+        initStore([]);
+      }
+    };
+
+    function initStore(data) {
+      const defaultCatalog = [
+        { id: 1, name: "Heavyweight Oversized Cotton Tee", category: "T-Shirt", gender: "Pria", price: 189000, originalPrice: 249000, isBestSeller: true, colors: ["Black", "Charcoal"], sizes: ["S", "M", "L", "XL"], description: "Kaos oversized 100% Cotton Combed 20s.", images: ["https://images.pexels.com/photos/1656684/pexels-photo-1656684.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 2, name: "Vintage Graphic Streetwear Tee", category: "T-Shirt", gender: "Pria", price: 199000, originalPrice: 259000, isBestSeller: false, colors: ["Black", "Washed Grey"], sizes: ["M", "L", "XL"], description: "Kaos motif vintage bertema aksen washed.", images: ["https://images.pexels.com/photos/2294342/pexels-photo-2294342.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 3, name: "Ribbed Cotton Crop Top", category: "T-Shirt", gender: "Wanita", price: 149000, originalPrice: 199000, isBestSeller: true, colors: ["Off-White", "Black"], sizes: ["XS", "S", "M"], description: "Crop top katun rib fleksibel.", images: ["https://images.pexels.com/photos/1382731/pexels-photo-1382731.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 4, name: "Casual Relaxed Linen Shirt", category: "Shirt", gender: "Pria", price: 329000, originalPrice: 429000, isBestSeller: true, colors: ["White", "Beige"], sizes: ["S", "M", "L"], description: "Kemeja linen santai.", images: ["https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 5, name: "Silk Satin Elegant Blouse", category: "Shirt", gender: "Wanita", price: 299000, originalPrice: 399000, isBestSeller: true, colors: ["Champagne", "Black"], sizes: ["S", "M", "L"], description: "Blouse sutra satin halus.", images: ["https://images.pexels.com/photos/1036623/pexels-photo-1036623.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 6, name: "Minimalist Heavy Fleece Hoodie", category: "Hoodie", gender: "Unisex", price: 379000, originalPrice: 499000, isBestSeller: true, colors: ["Black", "Grey"], sizes: ["S", "M", "L", "XL"], description: "Hoodie tebal fleece 330 gsm.", images: ["https://images.pexels.com/photos/1183266/pexels-photo-1183266.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 7, name: "Classic Denim Trucker Jacket", category: "Jacket", gender: "Pria", price: 459000, originalPrice: 599000, isBestSeller: false, colors: ["Indigo Blue"], sizes: ["M", "L", "XL"], description: "Jaket denim klasik berbobot tebal.", images: ["https://images.pexels.com/photos/1124468/pexels-photo-1124468.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 8, name: "Tailored Oversized Blazer", category: "Jacket", gender: "Wanita", price: 489000, originalPrice: 649000, isBestSeller: true, colors: ["Charcoal", "Beige"], sizes: ["S", "M", "L"], description: "Blazer terstruktur berbahan premium.", images: ["https://images.unsplash.com/photo-1548142813-c348350df52b?w=600&auto=format&fit=crop"] },
+        { id: 9, name: "Floral Print Summer Midi Dress", category: "Dress", gender: "Wanita", price: 359000, originalPrice: 459000, isBestSeller: false, colors: ["Floral Cream"], sizes: ["S", "M", "L"], description: "Gaun midi bermotif bunga kasual.", images: ["https://images.pexels.com/photos/2235071/pexels-photo-2235071.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 10, name: "Pleated Tapered Chino Pants", category: "Pants", gender: "Pria", price: 319000, originalPrice: 399000, isBestSeller: false, colors: ["Khaki", "Black"], sizes: ["28", "30", "32"], description: "Celana chino berlipat tunggal di depan.", images: ["https://images.pexels.com/photos/1598507/pexels-photo-1598507.jpeg?auto=compress&cs=tinysrgb&w=600"] },
+        { id: 11, name: "Minimalist Leather Crossbody Bag", category: "Accessories", gender: "Unisex", price: 279000, originalPrice: 349000, isBestSeller: true, colors: ["Tan Leather"], sizes: ["One Size"], description: "Tas selempang berbahan kulit sintetis.", images: ["https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=600"] }
+      ];
+
+      products = (data && data.length > 0) ? data : defaultCatalog;
+
+      renderFilters();
+      renderBestSellers();
+      renderShopCatalog();
+      lucide.createIcons();
+    }
+
+    function navigate(view) {
+      document.getElementById('viewHome').classList.add('hidden');
+      document.getElementById('viewShop').classList.add('hidden');
+      document.getElementById('viewCheckout').classList.add('hidden');
+
+      if (view === 'home') document.getElementById('viewHome').classList.remove('hidden');
+      if (view === 'shop') document.getElementById('viewShop').classList.remove('hidden');
+      if (view === 'checkout') document.getElementById('viewCheckout').classList.remove('hidden');
+    }
+
+    function renderFilters() {
+      const cats = ['All', 'T-Shirt', 'Shirt', 'Hoodie', 'Jacket', 'Pants', 'Dress', 'Accessories'];
+      const catContainer = document.getElementById('categoryFilterContainer');
+      catContainer.innerHTML = cats.map(c => 
+        `<button onclick="filterCategory('${c}')" class="px-4 py-1.5 rounded-full text-xs font-semibold ${activeCategory === c ? 'bg-black text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">${c}</button>`
+      ).join('');
+
+      const genders = ['All', 'Pria', 'Wanita'];
+      const genContainer = document.getElementById('genderFilterContainer');
+      genContainer.innerHTML = genders.map(g => 
+        `<button onclick="filterGender('${g}')" class="px-3 py-1 rounded ${activeGender === g ? 'bg-black text-white' : 'text-gray-600 hover:text-black'}">${g}</button>`
+      ).join('');
+    }
+
+    function filterCategory(c) {
+      activeCategory = c;
+      renderFilters();
+      renderShopCatalog();
+    }
+
+    function filterGender(g) {
+      activeGender = g;
+      renderFilters();
+      navigate('shop');
+      renderShopCatalog();
+    }
+
+    function handleSearch() {
+      searchQuery = document.getElementById('searchInput').value.toLowerCase();
+      navigate('shop');
+      renderShopCatalog();
+    }
+
+    function renderBestSellers() {
+      const grid = document.getElementById('bestSellerGrid');
+      const bst = products.filter(p => p.isBestSeller).slice(0, 4);
+      grid.innerHTML = bst.map(p => productCardHTML(p)).join('');
+      lucide.createIcons();
+    }
+
+    function renderShopCatalog() {
+      const grid = document.getElementById('shopProductGrid');
+      const filtered = products.filter(p => {
+        const matchGen = activeGender === 'All' || p.gender === activeGender || p.gender === 'Unisex';
+        const matchCat = activeCategory === 'All' || p.category === activeCategory;
+        const matchSearch = p.name.toLowerCase().includes(searchQuery);
+        return matchGen && matchCat && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<p class="col-span-full text-center py-12 text-gray-400 text-sm">Tidak ada produk ditemukan.</p>`;
+      } else {
+        grid.innerHTML = filtered.map(p => productCardHTML(p)).join('');
+      }
+      lucide.createIcons();
+    }
+
+    function productCardHTML(p) {
+      return `
+        <div class="bg-white rounded-xl overflow-hidden border hover:shadow-md transition group">
+          <div class="relative aspect-square bg-gray-100 cursor-pointer" onclick="openDetail(${p.id})">
+            <img src="${p.images[0]}" alt="${p.name}" onerror="handleImgError(this, ${p.id})" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+            ${p.isBestSeller ? `<span class="absolute top-2 left-2 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded">Best Seller</span>` : ''}
+          </div>
+          <div class="p-4">
+            <span class="text-[10px] font-bold text-gray-400 uppercase">${p.category} • ${p.gender}</span>
+            <h4 class="font-semibold text-xs line-clamp-1 mt-0.5 cursor-pointer hover:underline" onclick="openDetail(${p.id})">${p.name}</h4>
+            <div class="flex items-center justify-between mt-3">
+              <span class="font-bold text-sm">${formatIDR(p.price)}</span>
+              <button onclick="addToCart(${p.id})" class="p-1.5 bg-black text-white rounded-lg hover:bg-gray-800">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function openDetail(id) {
+      const p = products.find(item => item.id === id);
+      if (!p) return;
+
+      const content = document.getElementById('modalContent');
+      content.innerHTML = `
+        <img src="${p.images[0]}" alt="${p.name}" onerror="handleImgError(this, ${p.id})" class="w-full h-72 object-cover rounded-xl bg-gray-100" />
+        <div class="space-y-4">
+          <div>
+            <span class="text-[10px] font-bold text-gray-400 uppercase">${p.category} • ${p.gender}</span>
+            <h3 class="font-bold text-lg">${p.name}</h3>
+            <p class="text-xl font-black mt-1">${formatIDR(p.price)}</p>
+          </div>
+          <p class="text-xs text-gray-600">${p.description}</p>
+          <button onclick="addToCart(${p.id}); closeModal();" class="w-full bg-black text-white text-xs font-bold py-3 rounded-xl hover:bg-gray-800">
+            + Tambah ke Keranjang
+          </button>
+        </div>
+      `;
+      document.getElementById('productModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeModal() {
+      document.getElementById('productModal').classList.add('hidden');
+    }
+
+    function addToCart(id) {
+      const p = products.find(item => item.id === id);
+      if (!p) return;
+
+      const existing = cart.find(c => c.id === id);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        cart.push({ ...p, qty: 1 });
+      }
+
+      updateCartBadge();
+      showToast(`'${p.name}' ditambahkan ke keranjang!`);
+    }
+
+    function updateCartBadge() {
+      const badge = document.getElementById('cartCountBadge');
+      const totalQty = cart.reduce((acc, item) => acc + item.qty, 0);
+      if (totalQty > 0) {
+        badge.innerText = totalQty;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function toggleCartDrawer() {
+      const drawer = document.getElementById('cartDrawer');
+      const isHidden = drawer.classList.contains('opacity-0');
+
+      if (isHidden) {
+        renderCartItems();
+        drawer.classList.remove('opacity-0', 'pointer-events-none');
+      } else {
+        drawer.classList.add('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    function renderCartItems() {
+      const list = document.getElementById('cartItemsList');
+      const subtotalEl = document.getElementById('cartSubtotal');
+      const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+      subtotalEl.innerText = formatIDR(total);
+
+      if (cart.length === 0) {
+        list.innerHTML = `<p class="text-center text-gray-400 text-xs py-8">Keranjang belanja kosong.</p>`;
+        return;
+      }
+
+      list.innerHTML = cart.map(item => `
+        <div class="flex space-x-3 items-center border-b pb-3">
+          <img src="${item.images[0]}" onerror="handleImgError(this, ${item.id})" class="w-14 h-14 object-cover rounded-lg bg-gray-100" />
+          <div class="flex-1">
+            <h5 class="font-bold text-xs line-clamp-1">${item.name}</h5>
+            <p class="text-[11px] font-semibold text-gray-500">${formatIDR(item.price)} x ${item.qty}</p>
+          </div>
+          <button onclick="removeFromCart(${item.id})" class="text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(item => item.id !== id);
+      updateCartBadge();
+      renderCartItems();
+    }
+
+    function proceedToCheckout() {
+      if (cart.length === 0) {
+        showToast("Keranjang Anda masih kosong!");
+        return;
+      }
+      toggleCartDrawer();
+      const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+      document.getElementById('chkTotalDisplay').innerText = formatIDR(total);
+      navigate('checkout');
+    }
+
+    function submitCheckout(e) {
+      e.preventDefault();
+      const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+
+      const payload = {
+        fullName: document.getElementById('chkName').value,
+        phone: document.getElementById('chkPhone').value,
+        email: document.getElementById('chkEmail').value,
+        address: document.getElementById('chkAddress').value,
+        city: document.getElementById('chkCity').value,
+        province: document.getElementById('chkProv').value,
+        paymentMethod: document.getElementById('chkPayment').value,
+        shippingMethod: 'Regular',
+        items: cart,
+        totalAmount: total
+      };
+
+      if (typeof google !== 'undefined' && google.script) {
+        google.script.run
+          .withSuccessHandler((res) => {
+            alert(`Pesanan Berhasil! ID Transaksi: ${res.orderId}`);
+            cart = [];
+            updateCartBadge();
+            navigate('home');
+          })
+          .processOrder(payload);
+      } else {
+        alert(`[Mode Lokal] Pesanan Berhasil Diproses!`);
+        cart = [];
+        updateCartBadge();
+        navigate('home');
+      }
+    }
+  </script>
+</body>
+</html>
